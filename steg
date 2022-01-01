@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Defaults:
+RATIO_OF_CAPACITY_TO_USE=0.8
+directory=.
+encryption_algorithm=rijndael-256
+input_filename=-
+mode="embed"
 find_files() {
   directory="$1"
   if [ -z "${directory}" ]; then
@@ -12,7 +18,7 @@ get_file_capacity_in_bytes() {
   echo "Trying to get capacity in bytes of ${1}" >&2
   kB=$( steghide info -p '' "${1}" 2>/dev/null | grep capacity | sed -e 's/.*capacity: *\([0-9.]*\) KB.*$/\1/' )
   # divide capacity reported by two; it often doesn't seem to fit
-  echo "${kB} * 1024 / 2" | bc | sed -e 's/\..*$//'
+  echo "${kB} * 1024 * ${RATIO_OF_CAPACITY_TO_USE}" | bc | sed -e 's/\..*$//'
 }
 
 get_file_capacity_in_kilobytes() {
@@ -26,7 +32,7 @@ get_file_size_in_bytes() {
 clean_up() {
   echo "Cleaning up..." >&2
   if [ -n $tmpfile ]; then
-    rm "${tmpfile}"
+    rm "${tmpfile}" 2>/dev/null
   fi
 }
 
@@ -52,11 +58,6 @@ if [ $# = 0 ]; then
   show_usage
   exit 2
 fi
-# Defaults:
-directory=.
-encryption_algorithm=rijndael-256
-input_filename=-
-mode="embed"
 # Parsing options:
 options=':d:p:e:xh'
 while getopts $options option
