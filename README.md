@@ -46,7 +46,8 @@ If no ``<embed-file>`` is provided, the standard input will be embedded, or extr
 
 If no passphrase is provided using the ``-p`` parameter, the tool will prompt for one.
 
-To override the default file extension list ``jpeg,jpg``, use the ``-f`` parameter. File name matching by extension is case-insensitive.
+To override the default file extension list "jpeg,jpg", use the -f parameter. File name matching
+is case-insensitive, so "-f wav" will match all .wav and .WAV (and even .WaV) files.
 
 Progress output goes to standard error.
 
