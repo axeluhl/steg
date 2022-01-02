@@ -14,7 +14,6 @@ find_files() {
     directory=.
   fi
   find_command="find \"${directory}\" -type f $( get_find_options_from_comma_separated_file_extensions "${COMMA_SEPARATED_FILE_EXTENSIONS}" )"
-  echo "find command: ${find_command}" >&2
   eval ${find_command} | sort
 }
 
@@ -40,8 +39,26 @@ get_file_capacity_in_bytes() {
 ${kB} * ${RATIO_OF_CAPACITY_TO_USE}" | bc | sed -e 's/\..*$//'
 }
 
-get_file_capacity_in_kilobytes() {
-  steghide info -e rijndael-256 -p "" "$1" 2>/dev/null | grep capacity | sed -e 's/.*capacity: *\([0-9]*\)\(\.[0-9]*\)\? KB.*$/\1/'
+# returns 0 if the number of bytes specified in $1 can be fit into the
+# capacity of the files provided in the lines of $2; 1 otherwise.
+check_total_capacity_in_bytes() {
+  required_capacity_in_bytes=$1
+  total_capacity_in_bytes=0
+  total_capacity_in_bytes=$( echo "$2" | while read file; do
+    echo "Estimating total capacity; currently at ${file} with total capacity so far ${total_capacity_in_bytes}B" >&2
+    total_capacity_in_bytes=$(( ${total_capacity_in_bytes} + $( get_file_capacity_in_bytes "${file}" ) ))
+    echo "${total_capacity_in_bytes}"
+    if [ ${total_capacity_in_bytes} -ge ${required_capacity_in_bytes} ]; then
+      exit 0
+    fi
+  done | tail -1 )
+  if [ ${total_capacity_in_bytes} -ge ${required_capacity_in_bytes} ]; then
+    echo "Sufficient capacity (${total_capacity_in_bytes}B sufficient to hold ${required_capacity_in_bytes}B)" >&2
+    return 0
+  else
+    echo "Inufficient capacity (${total_capacity_in_bytes}B not sufficient to hold ${required_capacity_in_bytes}B)" >&2
+    return 1
+  fi
 }
 
 get_file_size_in_bytes() {
@@ -99,6 +116,14 @@ shift $((OPTIND-1))
 if [ -z ${passphrase} ]; then
   read -s -p "Passphrase (not echoed): " passphrase
   echo
+  if [ "${mode}" = "embed" ]; then
+    read -s -p "Passphrase confirmation (not echoed): " passphrase2
+    echo
+    if [ "${passphrase}" != "${passphrase2}" ]; then
+      echo "Passwords don't match" >&2
+      exit 5
+    fi
+  fi
 fi
 # Loop over the output files, determine capacity, then read that many
 # bytes from the input and encode them in the output file.
@@ -118,6 +143,9 @@ if [ "${mode}" = "embed" ]; then
   fi
   total_size_in_bytes=$( get_file_size_in_bytes "${input_filename}" )
   echo "File size to embed is ${total_size_in_bytes} bytes" >&2
+  if ! check_total_capacity_in_bytes ${total_size_in_bytes} "${files}"; then
+    exit 1
+  fi
   export size_encoded_so_far_in_bytes=0
   exec 4<"${input_filename}"
   size_encoded_so_far_in_bytes=$(
