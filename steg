@@ -34,7 +34,6 @@ get_find_options_from_comma_separated_file_extensions() {
 }
 
 get_file_capacity_in_bytes() {
-  echo "Trying to get capacity in bytes of ${1}" >&2
   kB=$( steghide info -p '' "${1}" 2>/dev/null | grep capacity | sed -e 's/.*capacity: *\([0-9.]*\) \(KB\|Byte\).*$/\1 \2/' | sed -e 's/KB/* 1024/' -e 's/Byte/* 1/' )
   # divide capacity reported by two; it often doesn't seem to fit
   echo "scale=3
@@ -116,14 +115,12 @@ if [ "${mode}" = "embed" ]; then
     input_filename="${tmpfile}"
     cat >"${tmpfile}"
   fi
-  echo "Determining file size..." >&2
   total_size_in_bytes=$( get_file_size_in_bytes "${input_filename}" )
   echo "File size to embed is ${total_size_in_bytes} bytes" >&2
   export size_encoded_so_far_in_bytes=0
   exec 4<"${input_filename}"
   size_encoded_so_far_in_bytes=$(
     echo "${files}" | while read file; do
-      echo "Determining file capacity for ${file}" >&2
       file_capacity_in_bytes=$( get_file_capacity_in_bytes "${file}" )
       echo "File: ${file} has capacity ${file_capacity_in_bytes}" >&2
       head -c ${file_capacity_in_bytes} <&4 | steghide embed -p "${passphrase}" -cf "${file}" -e ${encryption_algorithm} >&2
