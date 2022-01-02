@@ -2,23 +2,43 @@
 
 # Defaults:
 RATIO_OF_CAPACITY_TO_USE=0.8
+COMMA_SEPARATED_FILE_EXTENSIONS=jpeg,jpg
 directory=.
 encryption_algorithm=rijndael-256
 input_filename=-
 mode="embed"
+
 find_files() {
   directory="$1"
   if [ -z "${directory}" ]; then
     directory=.
   fi
-  find ${directory} -type f \( -iname '*.jpg' -o -iname '*.jpeg' \) | sort
+  find_command="find \"${directory}\" -type f $( get_find_options_from_comma_separated_file_extensions "${COMMA_SEPARATED_FILE_EXTENSIONS}" )"
+  echo "find command: ${find_command}" >&2
+  eval ${find_command} | sort
+}
+
+get_find_options_from_comma_separated_file_extensions() {
+  IFS=, read -a extensions <<<$1
+  i=0
+  FIND_OPTIONS="\\("
+  while [ $i -lt ${#extensions[*]} ]; do
+    if [ $i -gt 0 ]; then
+      FIND_OPTIONS="${FIND_OPTIONS} -o"
+    fi
+    FIND_OPTIONS="${FIND_OPTIONS} -iname '*.${extensions[$i]}'"
+    i=$(( i + 1 ))
+  done
+  FIND_OPTIONS="${FIND_OPTIONS} \\)"
+  echo "${FIND_OPTIONS}"
 }
 
 get_file_capacity_in_bytes() {
   echo "Trying to get capacity in bytes of ${1}" >&2
-  kB=$( steghide info -p '' "${1}" 2>/dev/null | grep capacity | sed -e 's/.*capacity: *\([0-9.]*\) KB.*$/\1/' )
+  kB=$( steghide info -p '' "${1}" 2>/dev/null | grep capacity | sed -e 's/.*capacity: *\([0-9.]*\) \(KB\|Byte\).*$/\1 \2/' | sed -e 's/KB/* 1024/' -e 's/Byte/* 1/' )
   # divide capacity reported by two; it often doesn't seem to fit
-  echo "${kB} * 1024 * ${RATIO_OF_CAPACITY_TO_USE}" | bc | sed -e 's/\..*$//'
+  echo "scale=3
+${kB} * ${RATIO_OF_CAPACITY_TO_USE}" | bc | sed -e 's/\..*$//'
 }
 
 get_file_capacity_in_kilobytes() {
@@ -37,7 +57,7 @@ clean_up() {
 }
 
 show_usage() {
-  echo "Usage: $0 [ -x ] [ -d <directory-with-cover-files> ] [ -p <passphrase> ] [ -e <encryption-algorithm> ] [ -h ] [ <embed-file> ]"
+  echo "Usage: $0 [ -x ] [ -d <directory-with-cover-files> ] [ -p <passphrase> ] [ -e <encryption-algorithm> ] [ -f <comma-separated-list-of-file-extensions> ] [ -h ] [ <embed-file> ]"
   echo
   echo "If -x is provided, extracts a file from the cover files; otherwise, the <embed-file> or standard input"
   echo "will be embedded into the cover files in place, modifying one or more of the cover files."
@@ -47,6 +67,7 @@ show_usage() {
   echo "directory is provided with -d, the cover files will be searched recursively, starting from the current directory."
   echo "If no <embed-file> is provided, the standard input will be embedded, or extraction will go to standard output, respectively."
   echo "If no passphrase is provided using the -p parameter, the tool will prompt for one."
+  echo "To override the default file extension list \"jpeg,jpg\", use the -f parameter."
   echo "Progress output goes to standard error."
   echo "The program exits with code 0 in case all went well; 1 in case there was input left that did not"
   echo "fit into the cover file(s), and 2 if this usage hint was requested."
@@ -59,13 +80,14 @@ if [ $# = 0 ]; then
   exit 2
 fi
 # Parsing options:
-options=':d:p:e:xh'
+options=':d:p:e:f:xh'
 while getopts $options option
 do
     case $option in
         d) directory="${OPTARG}";;
         p) passphrase="${OPTARG}";;
         e) encryption_algorithm="${OPTARG}";;
+	f) COMMA_SEPARATED_FILE_EXTENSIONS="${OPTARG}";;
         x) mode="extract";;
         h) show_usage; exit 2;;
         \?) echo "Invalid option"

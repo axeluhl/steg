@@ -29,7 +29,7 @@ Link the script to your ``/usr/local/bin`` folder, like this:
 ## Synopsis
 You can use the ``steg`` bash script as follows:
 ```
-  steg [ -x ] [ -d <directory-with-cover-files> ] [ -p <passphrase> ] [ -e <encryption-algorithm> ] [ -h ] [ <embed-file> ]
+  steg [ -x ] [ -d <directory-with-cover-files> ] [ -p <passphrase> ] [ -e <encryption-algorithm> ] [ -f <comma-separated-list-of-file-extensions> ] [ -h ] [ <embed-file> ]
 ```
 
 If ``-x`` is provided, extracts a file from the cover files; otherwise, the <embed-file> or standard input will be embedded into the cover files in place, modifying one or more of the cover files.
@@ -41,6 +41,8 @@ If a directory is provided using ``-d``, all JPEG/jpeg/JPG/jpg files are listed 
 If no ``<embed-file>`` is provided, the standard input will be embedded, or extraction will go to standard output, respectively.
 
 If no passphrase is provided using the ``-p`` parameter, the tool will prompt for one.
+
+To override the default file extension list \"jpeg,jpg\", use the -f parameter.
 
 Progress output goes to standard error.
 
