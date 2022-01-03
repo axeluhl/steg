@@ -57,7 +57,9 @@ is case-insensitive, so "-f wav" will match all .wav and .WAV (and even .WaV) fi
 Progress output goes to standard error.
 
 The program exits with code 0 in case all went well; 1 in case there was input left that did not
-fit into the cover file(s), and 2 if this usage hint was requested.
+fit into the cover file(s), and 2 if this usage hint was requested. The tool exits with code 4 in
+case an unknown option was found, and with 5 in case the confirmation password did not match
+the original embed password.
 
 Request this usage hint by invoking with ``-h`` or without any arguments.
 
