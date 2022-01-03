@@ -31,7 +31,8 @@ Link the script to your ``/usr/local/bin`` folder, like this:
 ```
 Link the man page to your ``/usr/local/man`` folder, like this:
 ```
-	sudo ln -s /usr/local/src/steg/steg.1.gz /usr/local/man
+        sudo mkdir -p /usr/local/man/man1
+	sudo ln -s /usr/local/src/steg/steg.1.gz /usr/local/man/man1
 ```
 
 ## Synopsis
