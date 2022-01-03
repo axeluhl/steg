@@ -29,6 +29,10 @@ Link the script to your ``/usr/local/bin`` folder, like this:
 ```
 	sudo ln -s /usr/local/src/steg/steg /usr/local/bin
 ```
+Link the man page to your ``/usr/local/man`` folder, like this:
+```
+	sudo ln -s /usr/local/src/steg/steg.1.gz /usr/local/man
+```
 
 ## Synopsis
 You can use the ``steg`` bash script as follows:
@@ -55,3 +59,12 @@ The program exits with code 0 in case all went well; 1 in case there was input l
 fit into the cover file(s), and 2 if this usage hint was requested.
 
 Request this usage hint by invoking with ``-h`` or without any arguments.
+
+## Editing the man page
+
+The tool comes with a man page. Writing man pages with groff is nothing I felt worth learning for this little
+tool, so I preferred to use ``pandoc`` for this task. Find the man page source in ``steg.1.md``. The man page
+``steg.1.gz`` can be built from the MarkDown document using the little ``makeman.sh`` script. Note a funny
+glitch in the toolchain: if your text happens to produce a groff document (``steg.1``) that accidentally
+contains a payload text snippet starting with a "." at the beginning of a line, groff will interpret this
+as a command. It took me a while to figure out why ".wav" wouldn't show properly...
