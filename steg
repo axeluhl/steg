@@ -2,7 +2,7 @@
 
 # Defaults:
 RATIO_OF_CAPACITY_TO_USE=0.8
-COMMA_SEPARATED_FILE_EXTENSIONS=jpeg,jpg
+COMMA_SEPARATED_FILE_EXTENSIONS=jpeg,jpg,wav,bmp,au
 directory=.
 encryption_algorithm=rijndael-256
 input_filename=-
@@ -148,11 +148,13 @@ if [ "${mode}" = "embed" ]; then
   fi
   export size_encoded_so_far_in_bytes=0
   exec 4<"${input_filename}"
+  export COVER_FILES_USED=$( mktemp copyFilesUsed.XXXXXX )
   size_encoded_so_far_in_bytes=$(
     echo "${files}" | while read file; do
       file_capacity_in_bytes=$( get_file_capacity_in_bytes "${file}" )
       echo "File: ${file} has capacity ${file_capacity_in_bytes}" >&2
       head -c ${file_capacity_in_bytes} <&4 | steghide embed -p "${passphrase}" -cf "${file}" -e ${encryption_algorithm} >&2
+      echo "${file}" >>"${COVER_FILES_USED}"
       size_encoded_so_far_in_bytes=$(( ${size_encoded_so_far_in_bytes} + ${file_capacity_in_bytes} ))
       echo "size_encoded_so_far_in_bytes is ${size_encoded_so_far_in_bytes}" >&2
       echo "${size_encoded_so_far_in_bytes}"
@@ -163,6 +165,8 @@ if [ "${mode}" = "embed" ]; then
     done | tail -1
   )
   echo "Encoded bytes: ${size_encoded_so_far_in_bytes}" >&2
+  cat "${COVER_FILES_USED}"
+  rm "${COVER_FILES_USED}"
   # Clean up:
   clean_up
   # Error check:
